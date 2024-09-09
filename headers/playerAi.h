@@ -7,6 +7,7 @@
 #include "userio.h"
 #include "playerTypes.h"
 #include "player.h"
+#include "playerAiCash.h"
 
 class GameRules;
 class GameLoop;
@@ -14,7 +15,7 @@ class Ship;
 
 class PlayerAi : public Player {
 public:
-    using DimensionGenerator = RandomGen<int>;
+    using DirectionGenerator = RandomGen<int>;
     using IndexGenerator = RandomGen<int>;
     using CharGenerator = RandomGen<char>;
 
@@ -41,11 +42,11 @@ public:
     LocationAttackStatus attackLocation(BoardLocations& boardLocs) const override;
 
     // utils
-        // check if we should see specific dimensions to go, when constructing ship (borders)
+        // check if we should see specific directions to go, when constructing ship (borders)
         // uses 'iterateDimAndCheckIfFree'
-    std::vector<PlayerDirection> checkForGoodDimensions(const BoardLocations& boardLocs, const TupleLocInt& startLocIndeces, ShipType shipType) const;
+    std::vector<PlayerDirection> checkForGoodDirections(const BoardLocations& boardLocs, const TupleLocInt& startLocIndeces, ShipType shipType) const;
 
-    // iterates through random dimension on board and checks if it's free
+    // iterates through random direction on board and checks if it's free
     // this is done before filling the vector of AI ship's locations
     bool iterateDimAndCheckIfFree( const BoardLocations& boardLocs, const TupleLocInt& startLocIndeces, int shipSize, PlayerDirection choosenDim) const;
 
@@ -53,17 +54,20 @@ public:
 
     TupleLocInt genLocation() const;
     TupleLocInt genFreeStartLocation(BoardLocations& boardLocs) const;
-    TupleLocInt genLocationForAttack() const;
+    TupleLocInt genFreeLocationForAttack(BoardLocations& boardLocs) const;
+    TupleLocChar genCharLocation() const;
 
 private:
     IndexGenerator m_index_generator{ 0, GameRules::boardColLength - 1 };
 
     CharGenerator m_char_generator{ Userio::asciiCharLowerBnd, Userio::asciiCharHigherBnd };
 
-    DimensionGenerator m_dimension_generator{ 
+    DirectionGenerator m_direction_generator{ 
         static_cast<int>(PlayerDirection::TOP), 
         static_cast<int>(
             static_cast<int>(PlayerDirection::DIRS_COUNT) - 1
         )
     };
+
+    mutable PlayerAiCash m_nextAttackCash;
 };

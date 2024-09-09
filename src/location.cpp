@@ -6,11 +6,15 @@
 LocationAttackStatus Location::killLocation(LocationOwner attackerType) {
     // error codes
     if (!m_isAlive) {
-        std::cout << "Error: location already dead\nPlease try again\n";
+        if (attackerType == LocationOwner::PLAYER) {
+            std::cout << "Error: location already dead\nPlease try again\n";
+        }
         return LocationAttackStatus::ATTACK_ALREADY_DEAD;
     }
     else if (m_ownerType == attackerType) {
-        std::cout << "Error: your trying to attack your own ship!\nPlease try again\n";
+        if (attackerType == LocationOwner::PLAYER) {
+            std::cout << "Error: your trying to attack your own ship!\nPlease try again\n";
+        }
         return LocationAttackStatus::ATTACK_YOURSELF;
     }
     // success codes

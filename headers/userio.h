@@ -54,6 +54,7 @@ namespace Userio {
     // user state construction
     void prepareForShipConstruction();
     TupleLocInt convertCharLocToInt(const TupleLocChar& location);
+    TupleLocChar convertIntLocToChar(const TupleLocInt& intLoc);
     TupleLocInt getLocationInput();
     PlayerDirection getDirectionForShipConstr(ShipType shipType);
 
@@ -77,5 +78,6 @@ namespace Userio {
     void prepareAttackLockInput();
 
     void declareEndOfGame(Player* winner, Player* looser);
+    void declareAttackLocation(const TupleLocChar& loc, std::string_view playerName);
     void showBoardSymbolsMeaning();
 };

@@ -3,7 +3,7 @@
 #include <vector>
 #include <memory>
 #include "ship.h"
-
+#include "gameTypes.h"
 
 using ShipMap = std::unordered_map<
     ShipType, 

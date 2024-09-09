@@ -11,22 +11,31 @@
 
 TupleLocInt PlayerAi::genLocation() const {
     return {
-      m_index_generator.gen(),
-      m_index_generator.gen(),
+        m_index_generator.gen(),
+        m_index_generator.gen(),
     };
 }
 
-TupleLocInt PlayerAi::genLocationForAttack() const {
-    // dont want to do separate generator for numeric char
+TupleLocChar PlayerAi::genCharLocation() const {
     char numericLocationIndex{ static_cast<char>(
         m_index_generator.gen() + Userio::asciiNumLowerBnd) 
     };
 
-    TupleLocChar locChar{ m_char_generator.gen(), numericLocationIndex };
+    TupleLocChar locChar{ m_char_generator.gen(), numericLocationIndex }; 
+    
+    return locChar;
+}
 
-    std::cout << "Player " << getName() << " attacks " << locChar[0] << ':' << locChar[1] << '\n';
-
+TupleLocInt PlayerAi::genFreeLocationForAttack(BoardLocations& boardLocs) const {
+    TupleLocChar locChar{ genCharLocation() };
     TupleLocInt locInt{ Userio::convertCharLocToInt(locChar) };
+    Location* locPtr{ &boardLocs(locInt[0], locInt[1]) };
+
+    while (!locPtr->isFree()) {
+        locChar = genCharLocation();
+        locInt = Userio::convertCharLocToInt(locChar);
+        locPtr = &boardLocs(locInt[0], locInt[1]);
+    }
 
     return locInt;
 }
@@ -46,39 +55,6 @@ TupleLocInt PlayerAi::genFreeStartLocation(BoardLocations& boardLocs) const {
 
     return locationIndeces;
 }
-
-
-// check border and FREE status of locations, if all true - dimension is possible or good
-std::vector<PlayerDirection> PlayerAi::checkForGoodDimensions(
-    // [0] - row, [1] - col
-    const BoardLocations& boardLocs,
-    const TupleLocInt& startLocIndeces,
-    ShipType shipType
-) const {
-
-    std::vector<PlayerDirection> possibleDimensions;
-    int shipSize{ GameRules::getLocationCountForShip(shipType) };
-
-    // top
-    if ((startLocIndeces[0] + 1) - shipSize >= 0
-        && PlayerAi::iterateDimAndCheckIfFree(boardLocs, startLocIndeces, shipSize, PlayerDirection::TOP)) {
-        possibleDimensions.push_back(PlayerDirection::TOP);
-    }
-    // bottom
-    if ((startLocIndeces[0] - 1) + shipSize < GameRules::boardRowLength
-        && PlayerAi::iterateDimAndCheckIfFree(boardLocs, startLocIndeces, shipSize, PlayerDirection::BOTTOM))
-        possibleDimensions.push_back(PlayerDirection::BOTTOM);
-    // left
-    if (((startLocIndeces[1] + 1) - shipSize) >= 0
-        && PlayerAi::iterateDimAndCheckIfFree(boardLocs, startLocIndeces, shipSize, PlayerDirection::LEFT))
-        possibleDimensions.push_back(PlayerDirection::LEFT);
-    // right
-    if (((startLocIndeces[1] - 1) + shipSize) < GameRules::boardColLength
-        && PlayerAi::iterateDimAndCheckIfFree(boardLocs, startLocIndeces, shipSize, PlayerDirection::RIGHT))
-        possibleDimensions.push_back(PlayerDirection::RIGHT);
-
-    return possibleDimensions;
-};
 
 
 bool PlayerAi::iterateDimAndCheckIfFree(
@@ -144,6 +120,39 @@ bool PlayerAi::iterateDimAndCheckIfFree(
         }
     }
 }
+
+
+// check border and FREE status of locations, if all true - dimension is possible or good
+std::vector<PlayerDirection> PlayerAi::checkForGoodDirections(
+    // [0] - row, [1] - col
+    const BoardLocations& boardLocs,
+    const TupleLocInt& startLocIndeces,
+    ShipType shipType
+) const {
+
+    std::vector<PlayerDirection> possibleDimensions;
+    int shipSize{ GameRules::getLocationCountForShip(shipType) };
+
+    // top
+    if ((startLocIndeces[0] + 1) - shipSize >= 0
+        && PlayerAi::iterateDimAndCheckIfFree(boardLocs, startLocIndeces, shipSize, PlayerDirection::TOP)) {
+        possibleDimensions.push_back(PlayerDirection::TOP);
+    }
+    // bottom
+    if ((startLocIndeces[0] - 1) + shipSize < GameRules::boardRowLength
+        && PlayerAi::iterateDimAndCheckIfFree(boardLocs, startLocIndeces, shipSize, PlayerDirection::BOTTOM))
+        possibleDimensions.push_back(PlayerDirection::BOTTOM);
+    // left
+    if (((startLocIndeces[1] + 1) - shipSize) >= 0
+        && PlayerAi::iterateDimAndCheckIfFree(boardLocs, startLocIndeces, shipSize, PlayerDirection::LEFT))
+        possibleDimensions.push_back(PlayerDirection::LEFT);
+    // right
+    if (((startLocIndeces[1] - 1) + shipSize) < GameRules::boardColLength
+        && PlayerAi::iterateDimAndCheckIfFree(boardLocs, startLocIndeces, shipSize, PlayerDirection::RIGHT))
+        possibleDimensions.push_back(PlayerDirection::RIGHT);
+
+    return possibleDimensions;
+};
 
 
 PlayerDirection PlayerAi::chooseRandDimFromGood(
@@ -246,13 +255,13 @@ std::unique_ptr<Ship> PlayerAi::constructSingleShip(
     TupleLocInt startLocIndeces{ PlayerAi::genFreeStartLocation(boardLocations) };
 
     std::vector<PlayerDirection> goodDimensions{ 
-        PlayerAi::checkForGoodDimensions(boardLocations, startLocIndeces, shipType)
+        PlayerAi::checkForGoodDirections(boardLocations, startLocIndeces, shipType)
     };
 
     // check if goodDims.size() > 1 and we can choose good dim from it
     while (goodDimensions.size() == 0) {
         startLocIndeces = PlayerAi::genFreeStartLocation(boardLocations);
-        goodDimensions = PlayerAi::checkForGoodDimensions(boardLocations, startLocIndeces, shipType);
+        goodDimensions = PlayerAi::checkForGoodDirections(boardLocations, startLocIndeces, shipType);
     }
 
     PlayerDirection goodDimension{ PlayerAi::chooseRandDimFromGood(goodDimensions) };
@@ -286,10 +295,67 @@ void PlayerAi::constructShips(BoardLocations& boardLocations) {
 
 // Game Actions
 LocationAttackStatus PlayerAi::attackLocation(BoardLocations& boardLocs) const {
+    LocationAttackStatus status;
 
-    TupleLocInt locationIndexToAttack{ genLocationForAttack() };
+    // have cash
+    if (m_nextAttackCash.isValid()) {
+        const TupleLocInt& attackLocation{ m_nextAttackCash.getNextAttackLocationAndUpdateState() };
 
-    Location& loc{ boardLocs(locationIndexToAttack[0], locationIndexToAttack[1]) };
+        // declare attack
+        TupleLocChar locChar{ Userio::convertIntLocToChar(attackLocation) };
+        Userio::declareAttackLocation(locChar, getName());
 
-    return loc.killLocation(LocationOwner::COMPUTER);
-};
+        Location& loc{ boardLocs(attackLocation[0], attackLocation[1]) };
+
+        status = loc.killLocation(LocationOwner::COMPUTER);
+
+        // change next attack direction from good directions
+        switch (status) {
+            case LocationAttackStatus::NEUTRAL_MISS:
+            [[fallthrough]];
+            case LocationAttackStatus::ATTACK_ALREADY_DEAD:
+            [[fallthrough]]; 
+            case LocationAttackStatus::ATTACK_YOURSELF: 
+                // 2 cases: no good attacks | good attacks > 0
+                // good attacks weren't happen
+                // go to next direction
+                if (m_nextAttackCash.getSuccessAttackCount() == 0) {
+                    m_nextAttackCash.changeAttackDirectionToNext();
+                }
+                // some good attacks were happen
+                // need to go to orthogonal direction from current
+                else {
+                    m_nextAttackCash.changeAttackDirectionToOrthogonal();
+                }
+                break;
+            case LocationAttackStatus::KILL_ENEMY_SHIP:
+                m_nextAttackCash.eraseCash();
+                break;
+            case LocationAttackStatus::KILL_ENEMY_LOCATION:
+                m_nextAttackCash.incrementSuccessAttackCount();
+                // if ship is not killed, but reach border -> change dir to orthogonal
+                if (!m_nextAttackCash.checkDirectionBorderForNextAttack()) {
+                    m_nextAttackCash.changeAttackDirectionToOrthogonal();
+                }
+                break;
+        }
+    } 
+
+    // dont have cash, attack random and create one
+    else {
+        TupleLocInt genAttackLocation{ genFreeLocationForAttack(boardLocs) };
+        Location& loc{ boardLocs(genAttackLocation[0], genAttackLocation[1]) };
+
+        // declare attack
+        TupleLocChar locChar{ Userio::convertIntLocToChar(genAttackLocation) };
+        Userio::declareAttackLocation(locChar, getName());
+
+        status = loc.killLocation(LocationOwner::COMPUTER);
+
+        if (status == LocationAttackStatus::KILL_ENEMY_LOCATION) {
+            m_nextAttackCash.initCash(genAttackLocation);
+        }
+    }
+
+    return status;
+}

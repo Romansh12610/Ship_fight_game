@@ -230,6 +230,15 @@ TupleLocInt Userio::convertCharLocToInt(const TupleLocChar& locationChar) {
     return locationInt;
 }
 
+TupleLocChar Userio::convertIntLocToChar(const TupleLocInt& intLoc) {
+    TupleLocChar locationChar{
+        static_cast<char>(intLoc[0] + Userio::asciiCharLowerBnd),
+        static_cast<char>(intLoc[1] + Userio::asciiNumLowerBnd)
+    };
+
+    return locationChar;
+}
+
 // start location
 TupleLocInt Userio::getLocationInput() {
     TupleLocChar locChar;
@@ -246,7 +255,7 @@ TupleLocInt Userio::getLocationInputForAttack(std::string_view playerName) {
 
     Userio::getLocationInputFromUser(locChar, Userio::validateInputCharTuple);
 
-    std::cout << "\nPlayer " << playerName << " attacks " << locChar[0] << ':' << locChar[1] << '\n';
+    Userio::declareAttackLocation(locChar, playerName);
 
     TupleLocInt locInt{ Userio::convertCharLocToInt(locChar) };
 
@@ -302,4 +311,8 @@ void Userio::showBoardSymbolsMeaning() {
             std::cout << '\n';
         }
     }
+}
+
+void Userio::declareAttackLocation(const TupleLocChar& loc, std::string_view playerName) {
+    std::cout << "Player " << playerName << " attacks " << loc[0] << ':' << loc[1] << '\n';
 }
