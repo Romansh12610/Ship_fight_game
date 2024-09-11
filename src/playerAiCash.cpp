@@ -108,7 +108,10 @@ std::vector<PlayerDirection> PlayerAiCash::getGoodDirectionsForCurrentLoc() cons
     constexpr int directionCount{ 4 };
     goodDirections.reserve(directionCount);
 
-    if (closeToVerticalBounds()) {
+    bool isCloseToVerticalBounds{ closeToVerticalBounds() };
+    bool isCloseToHorizontalBounds{ closeToHorizontalBounds() };
+
+    if (isCloseToVerticalBounds && !isCloseToHorizontalBounds) {
         goodDirections.push_back(PlayerDirection::LEFT);
         goodDirections.push_back(PlayerDirection::RIGHT);
         if ((m_currAttackLocation[0] - 1) >= 0) 
@@ -116,7 +119,7 @@ std::vector<PlayerDirection> PlayerAiCash::getGoodDirectionsForCurrentLoc() cons
         if ((m_currAttackLocation[0] + 1) < GameRules::boardRowLength)
             goodDirections.push_back(PlayerDirection::BOTTOM);
     }
-    else if (closeToHorizontalBounds()) {
+    else if (isCloseToHorizontalBounds && !isCloseToVerticalBounds) {
         goodDirections.push_back(PlayerDirection::TOP);
         goodDirections.push_back(PlayerDirection::BOTTOM);
         if ((m_currAttackLocation[1] - 1) >= 0) 

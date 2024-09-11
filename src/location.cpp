@@ -6,49 +6,49 @@
 LocationAttackStatus Location::killLocation(LocationOwner attackerType) {
     // error codes
     if (!m_isAlive) {
-        if (attackerType == LocationOwner::PLAYER) {
-            std::cout << "Error: location already dead\nPlease try again\n";
-        }
+        std::cout << "Error: location already dead\nPlease try again\n";
         return LocationAttackStatus::ATTACK_ALREADY_DEAD;
     }
-    else if (m_ownerType == attackerType) {
-        if (attackerType == LocationOwner::PLAYER) {
-            std::cout << "Error: your trying to attack your own ship!\nPlease try again\n";
-        }
-        return LocationAttackStatus::ATTACK_YOURSELF;
-    }
-    // success codes
-    else if (m_ownerType == LocationOwner::NONE) {
-        std::cout << "Current attack was a miss:(\n";
-        if (attackerType == LocationOwner::PLAYER) {
-            m_symbol = LocationSymbol::NEUTRAL_KILLED_BY_PLAYER;
-        }
-        else {
-            m_symbol = LocationSymbol::NEUTRAL_KILLED_BY_COMPUTER;
-        }
-        // return generic miss
-        return LocationAttackStatus::NEUTRAL_MISS;
-    }
-
-    // location was killed successfully
     else {
-        std::cout << "Enemy location was successfully killed!\n";
-        m_isAlive = false;
-
-        if (m_ownerType == LocationOwner::PLAYER) {
-            m_symbol = LocationSymbol::PLAYER_DEAD;
+        if (m_ownerType == attackerType) {
+            if (attackerType == LocationOwner::PLAYER) {
+                std::cout << "Error: your trying to attack your own ship!\nPlease try again\n";
+            }
+            return LocationAttackStatus::ATTACK_YOURSELF;
         }
+        else if (m_ownerType == LocationOwner::NONE) {
+            std::cout << "Current attack was a miss:(\n";
+            if (attackerType == LocationOwner::PLAYER) {
+                m_symbol = LocationSymbol::NEUTRAL_KILLED_BY_PLAYER;
+            }
+            else {
+                m_symbol = LocationSymbol::NEUTRAL_KILLED_BY_COMPUTER;
+            }
+
+            m_isAlive = false;
+            // return generic miss
+            return LocationAttackStatus::NEUTRAL_MISS;
+        }
+        // location was killed successfully
         else {
-            m_symbol = LocationSymbol::COMPUTER_DEAD;
-        }
+            std::cout << "Enemy location was successfully killed!\n";
+            m_isAlive = false;
 
-        m_shipPtr->checkIsAlive();
-        if (!m_shipPtr->getIsAlive()) {
-            std::cout << "You also kill an enemy ship!\n";
-            return LocationAttackStatus::KILL_ENEMY_SHIP;
-        }
+            if (m_ownerType == LocationOwner::PLAYER) {
+                m_symbol = LocationSymbol::PLAYER_DEAD;
+            }
+            else {
+                m_symbol = LocationSymbol::COMPUTER_DEAD;
+            }
 
-        return LocationAttackStatus::KILL_ENEMY_LOCATION;
+            m_shipPtr->checkIsAlive();
+            if (!m_shipPtr->getIsAlive()) {
+                std::cout << "You also kill an enemy ship!\n";
+                return LocationAttackStatus::KILL_ENEMY_SHIP;
+            }
+
+            return LocationAttackStatus::KILL_ENEMY_LOCATION;
+        }
     }
 }
 

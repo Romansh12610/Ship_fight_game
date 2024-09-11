@@ -54,7 +54,7 @@ public:
 
     TupleLocInt genLocation() const;
     TupleLocInt genFreeStartLocation(BoardLocations& boardLocs) const;
-    TupleLocInt genFreeLocationForAttack(BoardLocations& boardLocs) const;
+    TupleLocInt genFreeLocationForAttack() const;
     TupleLocChar genCharLocation() const;
 
 private:

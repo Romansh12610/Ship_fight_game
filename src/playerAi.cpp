@@ -26,16 +26,11 @@ TupleLocChar PlayerAi::genCharLocation() const {
     return locChar;
 }
 
-TupleLocInt PlayerAi::genFreeLocationForAttack(BoardLocations& boardLocs) const {
+TupleLocInt PlayerAi::genFreeLocationForAttack() const {
     TupleLocChar locChar{ genCharLocation() };
-    TupleLocInt locInt{ Userio::convertCharLocToInt(locChar) };
-    Location* locPtr{ &boardLocs(locInt[0], locInt[1]) };
+    Userio::declareAttackLocation(locChar, getName());
 
-    while (!locPtr->isFree()) {
-        locChar = genCharLocation();
-        locInt = Userio::convertCharLocToInt(locChar);
-        locPtr = &boardLocs(locInt[0], locInt[1]);
-    }
+    TupleLocInt locInt{ Userio::convertCharLocToInt(locChar) };
 
     return locInt;
 }
@@ -343,12 +338,8 @@ LocationAttackStatus PlayerAi::attackLocation(BoardLocations& boardLocs) const {
 
     // dont have cash, attack random and create one
     else {
-        TupleLocInt genAttackLocation{ genFreeLocationForAttack(boardLocs) };
+        TupleLocInt genAttackLocation{ genFreeLocationForAttack() };
         Location& loc{ boardLocs(genAttackLocation[0], genAttackLocation[1]) };
-
-        // declare attack
-        TupleLocChar locChar{ Userio::convertIntLocToChar(genAttackLocation) };
-        Userio::declareAttackLocation(locChar, getName());
 
         status = loc.killLocation(LocationOwner::COMPUTER);
 
