@@ -292,59 +292,68 @@ void PlayerAi::constructShips(BoardLocations& boardLocations) {
 LocationAttackStatus PlayerAi::attackLocation(BoardLocations& boardLocs) const {
     LocationAttackStatus status;
 
-    // have cash
-    if (m_nextAttackCash.isValid()) {
-        const TupleLocInt& attackLocation{ m_nextAttackCash.getNextAttackLocationAndUpdateState() };
+    while (true) {
+        // have cash
+        if (m_nextAttackCash.isValid()) {
+            const TupleLocInt& attackLocation{ m_nextAttackCash.getNextAttackLocationAndUpdateState() };
 
-        // declare attack
-        TupleLocChar locChar{ Userio::convertIntLocToChar(attackLocation) };
-        Userio::declareAttackLocation(locChar, getName());
+            // declare attack
+            TupleLocChar locChar{ Userio::convertIntLocToChar(attackLocation) };
+            Userio::declareAttackLocation(locChar, getName());
 
-        Location& loc{ boardLocs(attackLocation[0], attackLocation[1]) };
+            Location& loc{ boardLocs(attackLocation[0], attackLocation[1]) };
 
-        status = loc.killLocation(LocationOwner::COMPUTER);
+            status = loc.killLocation(LocationOwner::COMPUTER);
 
-        // change next attack direction from good directions
-        switch (status) {
-            case LocationAttackStatus::NEUTRAL_MISS:
-            [[fallthrough]];
-            case LocationAttackStatus::ATTACK_ALREADY_DEAD:
-            [[fallthrough]]; 
-            case LocationAttackStatus::ATTACK_YOURSELF: 
-                // 2 cases: no good attacks | good attacks > 0
-                // good attacks weren't happen
-                // go to next direction
-                if (m_nextAttackCash.getSuccessAttackCount() == 0) {
-                    m_nextAttackCash.changeAttackDirectionToNext();
-                }
-                // some good attacks were happen
-                // need to go to orthogonal direction from current
-                else {
-                    m_nextAttackCash.changeAttackDirectionToOrthogonal();
-                }
-                break;
-            case LocationAttackStatus::KILL_ENEMY_SHIP:
-                m_nextAttackCash.eraseCash();
-                break;
-            case LocationAttackStatus::KILL_ENEMY_LOCATION:
-                m_nextAttackCash.incrementSuccessAttackCount();
-                // if ship is not killed, but reach border -> change dir to orthogonal
-                if (!m_nextAttackCash.checkDirectionBorderForNextAttack()) {
-                    m_nextAttackCash.changeAttackDirectionToOrthogonal();
-                }
-                break;
+            // change next attack direction from good directions
+            switch (status) {
+                case LocationAttackStatus::NEUTRAL_MISS:
+                [[fallthrough]];
+                case LocationAttackStatus::ATTACK_ALREADY_DEAD:
+                [[fallthrough]]; 
+                case LocationAttackStatus::ATTACK_YOURSELF: 
+                    // 2 cases: no good attacks | good attacks > 0
+                    // good attacks weren't happen
+                    // go to next direction
+                    if (m_nextAttackCash.getSuccessAttackCount() == 0) {
+                        m_nextAttackCash.changeAttackDirectionToNext();
+                    }
+                    // some good attacks were happen
+                    // need to go to orthogonal direction from current
+                    else {
+                        m_nextAttackCash.changeAttackDirectionToOrthogonal();
+                    }
+                    break;
+                case LocationAttackStatus::KILL_ENEMY_SHIP:
+                    m_nextAttackCash.eraseCash();
+                    break;
+                case LocationAttackStatus::KILL_ENEMY_LOCATION:
+                    m_nextAttackCash.incrementSuccessAttackCount();
+                    // if ship is not killed, but reach border -> change dir to orthogonal
+                    if (!m_nextAttackCash.checkDirectionBorderForNextAttack()) {
+                        m_nextAttackCash.changeAttackDirectionToOrthogonal();
+                    }
+                    break;
+            }
+        } 
+
+        // dont have cash, attack random and create one
+        else {
+            TupleLocInt genAttackLocation{ genFreeLocationForAttack() };
+            Location& loc{ boardLocs(genAttackLocation[0], genAttackLocation[1]) };
+
+            status = loc.killLocation(LocationOwner::COMPUTER);
+
+            if (status == LocationAttackStatus::KILL_ENEMY_LOCATION) {
+                m_nextAttackCash.initCash(genAttackLocation);
+            }
         }
-    } 
 
-    // dont have cash, attack random and create one
-    else {
-        TupleLocInt genAttackLocation{ genFreeLocationForAttack() };
-        Location& loc{ boardLocs(genAttackLocation[0], genAttackLocation[1]) };
-
-        status = loc.killLocation(LocationOwner::COMPUTER);
-
-        if (status == LocationAttackStatus::KILL_ENEMY_LOCATION) {
-            m_nextAttackCash.initCash(genAttackLocation);
+        if (status == LocationAttackStatus::ATTACK_ALREADY_DEAD || status == LocationAttackStatus::ATTACK_YOURSELF) {
+            continue;
+        } 
+        else {
+            break;
         }
     }
 

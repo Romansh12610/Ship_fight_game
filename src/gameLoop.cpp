@@ -28,16 +28,8 @@ bool GameLoop::attackPlayerLocation(Player* playerWhoAttacks, Player* playerBein
     LocationAttackStatus status;
     // player attacks
     // error attacks are not counted
-    while (true) {
-        status = playerWhoAttacks->attackLocation(m_locations);
-        if (status == LocationAttackStatus::ATTACK_ALREADY_DEAD || status == LocationAttackStatus::ATTACK_YOURSELF) {
-            continue;
-        }
-        else {
-            break;
-        }
-    }
-
+    status = playerWhoAttacks->attackLocation(m_locations);
+    
     if (status == LocationAttackStatus::NEUTRAL_MISS) {
         std::cout << "Now it's " << playerBeingAttacked->getName() << " player turn to attack\n";
         return false;

@@ -180,10 +180,22 @@ void PlayerHuman::constructShips(BoardLocations& boardLocs) {
 // game actions
 LocationAttackStatus PlayerHuman::attackLocation(BoardLocations& boardLocs) const {
     Userio::prepareAttackLockInput();
+    LocationAttackStatus status;
 
-    TupleLocInt locIndexForAttack{ Userio::getLocationInputForAttack(getName()) };
+    while (true) {
+        TupleLocInt locIndexForAttack{ Userio::getLocationInputForAttack(getName()) };
 
-    Location& boardLoc{ boardLocs(locIndexForAttack[0], locIndexForAttack[1]) };
+        Location& boardLoc{ boardLocs(locIndexForAttack[0], locIndexForAttack[1]) };
 
-    return boardLoc.killLocation(LocationOwner::PLAYER);
+        status = boardLoc.killLocation(LocationOwner::PLAYER);
+
+        if (status == LocationAttackStatus::ATTACK_ALREADY_DEAD || status == LocationAttackStatus::ATTACK_YOURSELF) {
+            continue;
+        }
+        else {
+            break;
+        }
+    }
+
+    return status;
 }
